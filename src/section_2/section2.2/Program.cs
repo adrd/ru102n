@@ -1,15 +1,15 @@
 ﻿using StackExchange.Redis;
 
-var muxer = ConnectionMultiplexer.Connect("localhost");
-var db = muxer.GetDatabase();
+ConnectionMultiplexer muxer = ConnectionMultiplexer.Connect("localhost");
+IDatabase db = muxer.GetDatabase();
 // TODO for Coding Challenge Start here on starting-point branch
 // We'll maintain two lists, fruits and vegetables.
-var fruitKey = "fruits";
-var vegetableKey = "vegetables";
+string fruitKey = "fruits";
+string vegetableKey = "vegetables";
 db.KeyDelete(new RedisKey[] { fruitKey, vegetableKey });
 // Lists are doubly linked lists, meaning you can push or pop from 
 // either side of the list. However, any sort of indexed access becomes
-// an O(N) operation where N is the the number of elements you need to
+// an O(N) operation where N is the number of elements you need to
 // traverse to reach the index.
 
 // Let's push some fruit in to the left side.
@@ -27,7 +27,7 @@ Console.WriteLine($"The last fruit in the list is:  {db.ListGetByIndex(fruitKey,
 
 // Now, we can reverse the semantics of our insertions by using ListRightPush, which will
 // push to the right side of the list (the tail):
-db.ListRightPush(vegetableKey, new RedisValue[]{"Potato", "Carrot", "Asparagus", "Beet", "Garlic", "Tomato"});
+db.ListRightPush(vegetableKey, new RedisValue[] { "Potato", "Carrot", "Asparagus", "Beet", "Garlic", "Tomato" });
 Console.WriteLine("=====Vegetables=====");
 
 // Now if we try to access the first element in the vegetables list, we'll get the first element

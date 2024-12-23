@@ -1,14 +1,14 @@
 ﻿using StackExchange.Redis;
 
-var muxer = ConnectionMultiplexer.Connect("localhost");
-var db = muxer.GetDatabase();
+ConnectionMultiplexer muxer = ConnectionMultiplexer.Connect("localhost");
+IDatabase db = muxer.GetDatabase();
 
 // TODO for Coding Challenge Start here on starting-point branch
-var subscriber = muxer.GetSubscriber();
-var cancellationTokenSource = new CancellationTokenSource();
-var token = cancellationTokenSource.Token;
+ISubscriber subscriber = muxer.GetSubscriber();
+CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+CancellationToken token = cancellationTokenSource.Token;
 
-var channel = await subscriber.SubscribeAsync("test-channel");
+ChannelMessageQueue channel = await subscriber.SubscribeAsync("test-channel");
 
 channel.OnMessage(msg =>
 {
@@ -20,9 +20,9 @@ await subscriber.SubscribeAsync("test-channel", (channel, value) =>
     Console.WriteLine($"Received: {value} on channel: {channel}");
 });
 
-var basicSendTask = Task.Run(async () =>
+Task basicSendTask = Task.Run(async () =>
 {
-    var i = 0;
+    int i = 0;
     while (!token.IsCancellationRequested)
     {
         await db.PublishAsync("test-channel", i++);
@@ -36,9 +36,9 @@ await subscriber.SubscribeAsync("pattern:*", (channel, value) =>
 });
 
 
-var patternSendTask = Task.Run(async () =>
+Task patternSendTask = Task.Run(async () =>
 {
-    var i = 0;
+    int i = 0;
     while (!token.IsCancellationRequested)
     {
         await db.PublishAsync($"pattern:{Guid.NewGuid()}", i++);

@@ -1,10 +1,10 @@
 ﻿using StackExchange.Redis;
 
-var muxer = ConnectionMultiplexer.Connect("localhost");
-var db = muxer.GetDatabase();
+ConnectionMultiplexer muxer = ConnectionMultiplexer.Connect("localhost");
+IDatabase db = muxer.GetDatabase();
 
 // TODO for Coding Challenge Start here on starting-point branch
-var transaction = db.CreateTransaction();
+ITransaction transaction = db.CreateTransaction();
 
 transaction.HashSetAsync("person:1", new HashEntry[]
 {
@@ -16,7 +16,7 @@ transaction.SortedSetAddAsync("person:name:Steve", "person:1", 0);
 transaction.SortedSetAddAsync("person:postal_code:32999", "person:1", 0);
 transaction.SortedSetAddAsync("person:age", "person:1", 32);
 
-var success = transaction.Execute();
+bool success = transaction.Execute();
 Console.WriteLine($"Transaction Successful: {success}");
 
 // add condition that age == 32

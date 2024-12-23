@@ -3,15 +3,15 @@
 using StackExchange.Redis;
 
 Console.WriteLine("Hello, World!");
-var muxer = ConnectionMultiplexer.Connect("localhost");
-var db = muxer.GetDatabase();
+ConnectionMultiplexer muxer = ConnectionMultiplexer.Connect("localhost");
+IDatabase db = muxer.GetDatabase();
 
 // TODO for Coding Challenge Start here on starting-point branch
-var userAgeSet = "users:age";
-var userLastAccessSet = "users:lastAccess";
-var userHighScoreSet = "users:highScores";
-var namesSet = "names";
-var mostRecentlyActive = "users:mostRecentlyActive";
+string userAgeSet = "users:age";
+string userLastAccessSet = "users:lastAccess";
+string userHighScoreSet = "users:highScores";
+string namesSet = "names";
+string mostRecentlyActive = "users:mostRecentlyActive";
 
 db.KeyDelete(new RedisKey[]{userAgeSet, userLastAccessSet, userHighScoreSet, namesSet, mostRecentlyActive});
 
@@ -60,27 +60,27 @@ db.SortedSetAdd(namesSet,
     });
 
 // check user score
-var user3HighScore = db.SortedSetScore(userHighScoreSet, "User:3");
+double? user3HighScore = db.SortedSetScore(userHighScoreSet, "User:3");
 Console.WriteLine($"User:3 High Score: {user3HighScore}");
 
 // check user rank
-var user2Rank = db.SortedSetRank(userHighScoreSet, "User:2", Order.Descending);
+long? user2Rank = db.SortedSetRank(userHighScoreSet, "User:2", Order.Descending);
 Console.WriteLine($"User:2 Rank: {user2Rank}");
 
 // range operations
-var topThreeScores = db.SortedSetRangeByRank(userHighScoreSet, 0, 2, Order.Descending);
+RedisValue[] topThreeScores = db.SortedSetRangeByRank(userHighScoreSet, 0, 2, Order.Descending);
 Console.WriteLine($"Top three: {string.Join(", ", topThreeScores)}");
 
-var eighteenToThirty = db.SortedSetRangeByScoreWithScores(userAgeSet, 18, 30, Exclude.None);
+SortedSetEntry[] eighteenToThirty = db.SortedSetRangeByScoreWithScores(userAgeSet, 18, 30, Exclude.None);
 Console.WriteLine($"Users between 18 and 30: {string.Join(", ", eighteenToThirty)}");
 
-var namesAlphabetized = db.SortedSetRangeByValue(namesSet);
-Console.WriteLine($"Names Alphabetized: {string.Join(",",namesAlphabetized)}");
+RedisValue[] namesAlphabetized = db.SortedSetRangeByValue(namesSet);
+Console.WriteLine($"Names Alphabetized: {string.Join(",", namesAlphabetized)}");
 
-var namesBetweenAandJ = db.SortedSetRangeByValue(namesSet, "A", "K", Exclude.Stop);
+RedisValue[] namesBetweenAandJ = db.SortedSetRangeByValue(namesSet, "A", "K", Exclude.Stop);
 Console.WriteLine($"Names between A and J: {string.Join(", ", namesBetweenAandJ)}");
 
-db.SortedSetRangeAndStore(userLastAccessSet,mostRecentlyActive,  0, 2, order: Order.Descending);
-var rankOrderMostRecentlyActive = db.SortedSetCombineWithScores(SetOperation.Intersect, new RedisKey[]{userHighScoreSet, mostRecentlyActive}, new double[]{1,0}).Reverse();
+db.SortedSetRangeAndStore(userLastAccessSet, mostRecentlyActive, 0, 2, order: Order.Descending);
+IEnumerable<SortedSetEntry> rankOrderMostRecentlyActive = db.SortedSetCombineWithScores(SetOperation.Intersect, new RedisKey[] { userHighScoreSet, mostRecentlyActive }, new double[] { 1, 0 }).Reverse();
 Console.WriteLine($"Highest Scores Most Recently Active: {string.Join(", ", rankOrderMostRecentlyActive)}");
 // end coding challenge

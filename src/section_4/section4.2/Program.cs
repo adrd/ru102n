@@ -5,8 +5,8 @@ using NRedisTimeSeries.DataTypes;
 using StackExchange.Redis;
 
 
-var muxer = ConnectionMultiplexer.Connect("localhost");
-var db = muxer.GetDatabase();
+ConnectionMultiplexer muxer = ConnectionMultiplexer.Connect("localhost");
+IDatabase db = muxer.GetDatabase();
 
 // TODO for Coding Challenge Start here on starting-point branch
 // Delete keys.
@@ -15,14 +15,14 @@ db.KeyDelete(new RedisKey[]{"sensor", "sensor:Max", "sensor:Avg", "sensor:Min"})
 // Create Time Series and Rules.
 await db.TimeSeriesCreateAsync("sensor", 60000, new List<TimeSeriesLabel>{new TimeSeriesLabel("id", "sensor-1")});
 
-var aggregations = new TsAggregation[]{TsAggregation.Avg, TsAggregation.Min, TsAggregation.Max};
-foreach(var agg in aggregations)
+TsAggregation[] aggregations = new TsAggregation[]{TsAggregation.Avg, TsAggregation.Min, TsAggregation.Max};
+foreach(TsAggregation agg in aggregations)
 {
     await db.TimeSeriesCreateAsync($"sensor:{agg}", 60000, new List<TimeSeriesLabel>{new ("type", agg.ToString()), new("aggregation-for", "sensor-1")});
     await(db.TimeSeriesCreateRuleAsync("sensor", new TimeSeriesRule($"sensor:{agg}", 5000, agg)));
 }
 
-var producerTask = Task.Run(async()=>{
+Task producerTask = Task.Run(async()=>{
     while(true)
     {
         await db.TimeSeriesAddAsync("sensor", "*", Random.Shared.Next(50));
@@ -30,22 +30,22 @@ var producerTask = Task.Run(async()=>{
     }
 });
 
-var consumerTask = Task.Run(async()=>{
+Task consumerTask = Task.Run(async()=>{
     while(true)
     {
         await Task.Delay(1000);
-        var result = await db.TimeSeriesGetAsync("sensor");
+        TimeSeriesTuple result = await db.TimeSeriesGetAsync("sensor");
         Console.WriteLine($"{result.Time.Value}: {result.Val}");
     }
 });
 
-var aggregationConsumerTask = Task.Run(async()=>
+Task aggregationConsumerTask = Task.Run(async()=>
 {
     while(true)
     {
         await Task.Delay(5000);
-        var results = await db.TimeSeriesMGetAsync(new List<string>(){"aggregation-for=sensor-1"}, true);
-        foreach(var result in results)
+        IReadOnlyList<(string key, IReadOnlyList<TimeSeriesLabel> labels, TimeSeriesTuple value)> results = await db.TimeSeriesMGetAsync(new List<string>(){"aggregation-for=sensor-1"}, true);
+        foreach((string key, IReadOnlyList<TimeSeriesLabel> labels, TimeSeriesTuple value) result in results)
         {
             Console.WriteLine($"{result.labels.First(x=>x.Key == "type").Value}: {result.value.Val}");
         }

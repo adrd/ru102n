@@ -10,8 +10,8 @@ public class SalesContext : DbContext
 
     public SalesContext()
     {
-        var folder = Environment.SpecialFolder.LocalApplicationData;
-        var path = Environment.GetFolderPath(folder);
+        Environment.SpecialFolder folder = Environment.SpecialFolder.LocalApplicationData;
+        string path = Environment.GetFolderPath(folder);
         DbPath = System.IO.Path.Join(path, "Sales.db");
     }
 

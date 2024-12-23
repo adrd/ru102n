@@ -28,12 +28,12 @@ public class EmployeeController : ControllerBase
     [HttpGet("top")]
     public async Task<Dictionary<string,object>> GetTopSalesperson()
     {
-        var stopwatch = Stopwatch.StartNew();
+        Stopwatch stopwatch = Stopwatch.StartNew();
 
         // TODO Section 3.2 step 4
         // add cache check here
-        var topSalesTask = _cache.GetStringAsync("top:sales");
-        var topNameTask = _cache.GetStringAsync("top:name");
+        Task<string?> topSalesTask = _cache.GetStringAsync("top:sales");
+        Task<string?> topNameTask = _cache.GetStringAsync("top:name");
 
         await Task.WhenAll(topSalesTask, topNameTask);
 
@@ -56,9 +56,9 @@ public class EmployeeController : ControllerBase
 
         // TODO Section 3.2 step 3
         // add cache insert here
-        var cacheOptions = new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5) };
-        var topSalesInsertTask = _cache.SetStringAsync("top:sales", topSalesperson.sumSales.ToString(), cacheOptions);
-        var topNameInsertTask = _cache.SetStringAsync("top:name", topSalesperson.Employee.Name, cacheOptions);
+        DistributedCacheEntryOptions cacheOptions = new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5) };
+        Task topSalesInsertTask = _cache.SetStringAsync("top:sales", topSalesperson.sumSales.ToString(), cacheOptions);
+        Task topNameInsertTask = _cache.SetStringAsync("top:name", topSalesperson.Employee.Name, cacheOptions);
         await Task.WhenAll(topSalesInsertTask, topNameInsertTask);
         // End Section 3.2 step 3
 
@@ -73,12 +73,12 @@ public class EmployeeController : ControllerBase
     [HttpGet("average/{id}")]
     public async Task<Dictionary<string,double>> GetAverage([FromRoute] int id)
     {
-        var stopwatch = Stopwatch.StartNew();
+        Stopwatch stopwatch = Stopwatch.StartNew();
 
         // TODO Section 3.2 step 5
         // add caching logic here
-        var key = $"employee:{id}:avg";
-        var cacheResult = await _cache.GetStringAsync(key);
+        string key = $"employee:{id}:avg";
+        string? cacheResult = await _cache.GetStringAsync(key);
 
         if (cacheResult != null)
         {
@@ -91,7 +91,7 @@ public class EmployeeController : ControllerBase
         }
         // end Section 3.2 step 5
 
-        var avg = await _salesDb.Employees.Include(x => x.Sales).Where(x=>x.EmployeeId == id).Select(x=>x.Sales.Average(y=>y.Total)).FirstAsync();
+        double avg = await _salesDb.Employees.Include(x => x.Sales).Where(x=>x.EmployeeId == id).Select(x=>x.Sales.Average(y=>y.Total)).FirstAsync();
         
         // TODO Section 3.2 step 6
         // add cache set here
@@ -109,11 +109,11 @@ public class EmployeeController : ControllerBase
     [HttpGet("totalSales")]
     public async Task<Dictionary<string, long>> GetTotalSales()
     {
-        var stopwatch = Stopwatch.StartNew();
+        Stopwatch stopwatch = Stopwatch.StartNew();
         
         // TODO Section 3.2 step 7
         // add caching logic here
-        var cacheResult = await _cache.GetStringAsync("totalSales");
+        string? cacheResult = await _cache.GetStringAsync("totalSales");
         if (cacheResult != null)
         {
             stopwatch.Stop();
@@ -125,7 +125,7 @@ public class EmployeeController : ControllerBase
         }
         // end Section 3.2 step 7
 
-        var totalSales = await _salesDb.Sales.SumAsync(x => x.Total);
+        int totalSales = await _salesDb.Sales.SumAsync(x => x.Total);
 
         // TODO Section 3.2 step 8
         // add cache set here

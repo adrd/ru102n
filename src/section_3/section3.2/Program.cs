@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 using section3._2;
 using StackExchange.Redis;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
@@ -11,6 +11,7 @@ builder.Services.AddControllers().AddNewtonsoftJson(x=>x.SerializerSettings.Refe
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<SalesContext>();
+// !!! ATTENTION - BE AWARE - Comment this in order to migrate database and uncomment in order to run app !!!
 builder.Services.AddHostedService<InitService>();
 
 // TODO Section 3.2 Step 1
@@ -21,7 +22,13 @@ builder.Services.AddStackExchangeRedisCache(x => x.ConfigurationOptions = new Co
     Password = ""
 });
 // End Section 3.2 Step 1
-var app = builder.Build();
+WebApplication app = builder.Build();
+
+// DIRTY HACK, we WILL come back to fix this - Uncomment in order to migrate database
+//IServiceScope scope = app.Services.CreateScope();
+//SalesContext context = scope.ServiceProvider.GetRequiredService<SalesContext>();
+//context.Database.EnsureDeleted();
+//context.Database.EnsureCreated();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

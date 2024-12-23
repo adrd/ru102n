@@ -2,8 +2,8 @@
 
 using StackExchange.Redis;
 
-var muxer = ConnectionMultiplexer.Connect("localhost");
-var db = muxer.GetDatabase();
+ConnectionMultiplexer muxer = ConnectionMultiplexer.Connect("localhost");
+IDatabase db = muxer.GetDatabase();
 
 // TODO for Coding Challenge Start here on starting-point branch
 await db.KeyDeleteAsync("bf");
@@ -14,14 +14,14 @@ await db.KeyDeleteAsync("topk");
 char[] delimiterChars = { ' ', ',', '.', ':', '\t', '\n', '—', '?', '"', ';', '!', '’', '\r', '\'', '(', ')', '”' };
 
 // Pull in text of Moby Dick.
-var text = await File.ReadAllTextAsync("data/moby_dick.txt");
+string text = await File.ReadAllTextAsync("data/moby_dick.txt");
 
 // Split words out from text.
-var words = text.Split(delimiterChars).Where(s=>!string.IsNullOrWhiteSpace(s)).Select(s=>s.ToLower()).Select(x=>x).ToArray();
+string[] words = text.Split(delimiterChars).Where(s=>!string.IsNullOrWhiteSpace(s)).Select(s=>s.ToLower()).Select(x=>x).ToArray();
 
 // Organize our words into a list to be pushed into the bloom filter in one shot, we could de-duplicate to make the transit shorter,
 // but there's nothing inherently wrong with sending duplicates as the filter will filter them out.
-var bloomList = words.Aggregate(new HashSet<object> { "bf" }, (list, word) =>
+HashSet<object> bloomList = words.Aggregate(new HashSet<object> { "bf" }, (list, word) =>
 {
     list.Add(word);
     return list;
@@ -37,7 +37,7 @@ await db.ExecuteAsync("BF.MADD", bloomList, CommandFlags.FireAndForget);
 await db.ExecuteAsync("TOPK.RESERVE", "topk", 10, 20, 10, .925);
 
 // We need to organize the words into a list where each word is followed by the number of occurrences it has in Moby Dick.
-var topKList = words.Aggregate(new Dictionary<string, int>(), (dict, word) =>
+List<object> topKList = words.Aggregate(new Dictionary<string, int>(), (dict, word) =>
 {
     if (!dict.ContainsKey(word))
     {
@@ -57,22 +57,22 @@ var topKList = words.Aggregate(new Dictionary<string, int>(), (dict, word) =>
 await db.ExecuteAsync("TOPK.INCRBY", topKList, CommandFlags.FireAndForget);
 
 // Ask the Bloom Filter and Top-K some questions...
-var doesTheExist = await db.ExecuteAsync("BF.EXISTS", "bf", "the");
+RedisResult doesTheExist = await db.ExecuteAsync("BF.EXISTS", "bf", "the");
 
-var doesTheExistAsInt = (int)doesTheExist;
+int doesTheExistAsInt = (int)doesTheExist;
 Console.WriteLine($"Typeof {nameof(doesTheExistAsInt)}: {doesTheExistAsInt.GetType()}");
 
-var doesTheExistAsDouble = (double)doesTheExist;
+double doesTheExistAsDouble = (double)doesTheExist;
 Console.WriteLine($"Typeof {nameof(doesTheExistAsDouble)}: {doesTheExistAsDouble.GetType()}");
 
 Console.WriteLine($"Type enum for {nameof(doesTheExist)}: {doesTheExist.Type}");
 Console.WriteLine($"Does 'the' exist in filter? {doesTheExist}'");
 
-var res = await db.ExecuteAsync("TOPK.LIST", "topk");
-var arr = ((RedisResult[])res!).Select(x=>x.ToString());
+RedisResult res = await db.ExecuteAsync("TOPK.LIST", "topk");
+IEnumerable<string> arr = ((RedisResult[])res!).Select(x=>x.ToString());
 Console.WriteLine($"Top 10: {string.Join(", ", arr)}");
 
-var withCounts = (await db.ExecuteAsync("TOPK.LIST", "topk", "WITHCOUNT")).ToDictionary().Select(x=>$"{x.Key}: {x.Value}");
+IEnumerable<string> withCounts = (await db.ExecuteAsync("TOPK.LIST", "topk", "WITHCOUNT")).ToDictionary().Select(x=>$"{x.Key}: {x.Value}");
 
 Console.WriteLine($"Top 10, with counts: {string.Join(", ", withCounts)}");
 // end coding challenge

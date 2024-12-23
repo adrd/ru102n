@@ -15,8 +15,9 @@ public class HomeController : Controller
 
     public IActionResult Index()
     {
-        var fourtyTwo = 42;
+        int fourtyTwo = 42;
         HttpContext.Session.SetString("meaning of life", fourtyTwo.ToString());
+        HttpContext.Session.SetString("color", "black and white");
         return View();
     }
 
